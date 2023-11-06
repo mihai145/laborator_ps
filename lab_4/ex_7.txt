@@ -1,0 +1,7 @@
+SNR(db) = 10 * log10(SNR) = 80db 
+    => 10 * log10(SNR) = 80db 
+    => log10(SNR) = 8db 
+    => SNR = 10^8
+
+10^8 = PSemnal / PZgomot
+    => PZgomot = PSemnal / 10^8 = 90db / 10^8 = 9*10^-7 db

@@ -1,0 +1,2 @@
+Frecventa minima de esantionare este 2*200Hz=400Hz.
+
