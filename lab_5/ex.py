@@ -14,8 +14,9 @@ print(f'Intervalul de timp acoperit este {N} ore ({N//24} zile)')
 print(f'In conditiile enuntate frecventa maxima este {1/7200}Hz')
 
 # d)
+X_sv = x[:,2].copy() # saved copy for i)
+
 X = np.fft.fft(x[:,2])
-X_sv = X.copy() # for i)
 X = abs(X/N)
 X = X[:N//2]
 
@@ -45,6 +46,12 @@ for (idx, arg) in enumerate(args[::-1]):
     cnt_zile = (1/f[arg])/(24 * 3600)
     print(f'A {idx+1}-a cea mai insemnata frecventa corespunde unei perioade de {cnt_zile} zile')
 
+# A 1-a cea mai insemnata frecventa corespunde unei perioade de 761.9166666666666 zile
+# A 2-a cea mai insemnata frecventa corespunde unei perioade de 380.9583333333333 zile
+# A 3-a cea mai insemnata frecventa corespunde unei perioade de 0.999890638670166 zile
+# A 4-a cea mai insemnata frecventa corespunde unei perioade de 253.97222222222217 zile
+# A 5-a cea mai insemnata frecventa corespunde unei perioade de 6.99006116207951 zile
+
 # g)
 with open('Train.csv') as file:
     dates = []
@@ -69,5 +76,22 @@ plt.plot(samples_1_month)
 plt.savefig('1_month.pdf', format='pdf')
 
 # h)
+# Putem analiza trendul de crestere a traficului, dupa care vom realiza masuratori in prezent. Apoi, vom estima perioada de inceput a studiului.
+# Totusi, aceasta solutie asuma un trend constant de crestere a traficului si acuratete a masuratorilor din prezent.
 
 # i)
+X_cleared = np.fft.fft(X_sv)
+for i in range(1, len(X_cleared)//2):
+    cnt_zile = (1/f[i])/(24 * 3600)
+    if cnt_zile < 1/3: # frecvente inalte, cel putin de 3 ori pe zi
+        X_cleared[i:len(X_cleared)-i] = 0+0j
+        break
+
+cleared_signal = np.fft.ifft(X_cleared)
+
+plt.figure()
+fig, axs = plt.subplots(2)
+fig.suptitle("500 masuratori consecutive: initial vs frecvente inalte eliminate")
+axs[0].plot(X_sv[1000:1500])
+axs[1].plot(cleared_signal[1000:1500].real)
+plt.savefig('cleared_signal.pdf', format='pdf')
