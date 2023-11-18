@@ -16,9 +16,9 @@ fft_outputs = []
 for group in groups:
     fft_outputs += [np.fft.fft(group)]
 
-spectogram = np.zeros((len(fft_outputs), len(fft_outputs[0])))
+spectogram = np.zeros((len(fft_outputs), len(fft_outputs[0]) // 2))
 for l, fft_output in enumerate(fft_outputs):
-    for c, x in enumerate(fft_output):
+    for c, x in enumerate(fft_output[:len(fft_output)//2]):
         spectogram[l][c] = np.abs(x)
 
 plt.imshow(spectogram.T, norm="log", aspect=0.2)
