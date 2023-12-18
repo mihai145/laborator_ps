@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 OUT = "graphs"
-
+np.random.seed(145)
 
 # a)
 N = 1000
@@ -50,66 +50,63 @@ def get_mse(y_pred, y):
     return np.mean((y_pred - y) ** 2)
 
 
-def get_Y(arr, m, p):
+# ts - vector of size m+p
+def get_ar_model(ts, m, p):
+    if ts.shape[0] != m + p:
+        raise ValueError(f"The input has size {ts.shape[0]}, expected {m+p}")
+
+    y = ts[-1 : -m - 1 : -1]
+
     Y = np.zeros((m, p))
     for i in range(m):
-        if i > 0:
-            Y[i] = arr[p - 1 + i : -1 + i : -1]
+        Y[i] = ts[-1 - 1 - i : -1 - 1 - p - i : -1]
+
+    x = np.linalg.lstsq(Y, y, rcond=None)[0]
+    return x
+
+
+def get_predictions(ts, m, p):
+    x = get_ar_model(ts[: m + p], m, p)
+    y_pred = ts[: m + p].copy()
+    n = ts.shape[0]
+
+    for i in range(m + p, n):
+        if i - p - 1 == -1:
+            pred = y_pred[i - 1 :: -1] @ x
         else:
-            Y[0] = arr[p - 1 :: -1]
-
-    return Y
-
-
-def least_squares(arr, p):
-    m = len(arr) - p
-    Y = get_Y(arr, m, p)
-    b = arr[p:]
-
-    return np.linalg.lstsq(Y, b, rcond=None)[0]
-
-
-def get_predictions(arr, m, p):
-    y_pred = []
-    for i in range(m + p - 1, N - 1):
-        coefs = least_squares(arr[i - m - p + 1 : i + 1], p)
-
-        Y = get_Y(arr[i - m - p + 2 : i + 2], m, p)
-        y = Y @ coefs
-
-        y_pred.append(y[-1])
+            pred = y_pred[i - 1 : i - p - 1 : -1] @ x
+        y_pred = np.append(y_pred, pred)
 
     return y_pred
 
 
-def draw_predictions(arr, m, p, out_path):
-    y_pred = get_predictions(arr, m, p)
-    y_pred = np.concatenate((arr[: m + p], y_pred), axis=0)
+y_pred = get_predictions(ts, 237, 124)
 
-    mse = get_mse(y_pred, ts)
-
-    fig, ax = plt.subplots()
-    (l1,) = ax.plot(arr, label="Actual")
-    (l2,) = ax.plot(y_pred, label="Predicted")
-    ax.legend(handles=[l1, l2])
-    ax.set_title(f"AR with m={m}, p={p}, mse={np.round(mse, 4)}")
-    fig.savefig(out_path, format="pdf")
-
-
-draw_predictions(ts, 10, 5, f"{OUT}/1c.pdf")
+fig, ax = plt.subplots()
+(l1,) = ax.plot(ts, label="actual")
+(l2,) = ax.plot(y_pred, label="predicted")
+ax.legend(handles=[l1, l2])
+ax.set_title(f"m=237, p=124, mse={np.round(get_mse(y_pred, ts), 4)}")
+fig.savefig(f"{OUT}/1c.pdf", format="pdf")
 
 
 # d)
-min_mse, coefs = 100, (-1, -1)
-for m in range(1, 50 + 1):
-    for p in range(1, 50 + 1):
+# Tune m and p
+best_mse, best_m, best_p = None, None, None
+for m in range(1, 300):
+    for p in range(1, m - 1):
         y_pred = get_predictions(ts, m, p)
-        y_pred = np.concatenate((ts[: m + p], y_pred), axis=0)
-
         mse = get_mse(y_pred, ts)
-        if min_mse > mse:
-            min_mse = mse
-            coefs = (m, p)
 
-print(f"Min mse {min_mse}, achieved with m={m}, p={p}")
-draw_predictions(ts, coefs[0], coefs[1], f"{OUT}/1d.pdf")
+        if best_mse is None or mse < best_mse:
+            print(f"Mse: {mse}, m: {m}, p: {p}")
+            best_mse, best_m, best_p = mse, m, p
+
+y_pred = get_predictions(ts, best_m, best_p)
+
+fig, ax = plt.subplots()
+(l1,) = ax.plot(ts, label="actual")
+(l2,) = ax.plot(y_pred, label="predicted")
+ax.legend(handles=[l1, l2])
+ax.set_title(f"m={best_m}, p={best_p}, mse={np.round(get_mse(y_pred, ts), 4)}")
+fig.savefig(f"{OUT}/1d.pdf", format="pdf")
